@@ -17,11 +17,29 @@ NOVNC_BIND="${GRT_NOVNC_BIND:-127.0.0.1}"     # keep browser desktop local by de
 NOVNC_PORT="${GRT_NOVNC_PORT:-6080}"
 VNC_RESOLUTION="${GRT_VNC_RESOLUTION:-1920x900x24}"
 
+# Host folder exposed inside the container for Save/Load dialogs.
+# Override with GRT_DOCS_DIR=/some/path before running.
+if [[ -z "${GRT_DOCS_DIR:-}" ]]; then
+    case "$OS_KIND" in
+        Darwin) GRT_DOCS_DIR="$HOME/Documents" ;;
+        Linux)
+            if command -v xdg-user-dir >/dev/null 2>&1; then
+                GRT_DOCS_DIR="$(xdg-user-dir DOCUMENTS 2>/dev/null || echo "$HOME/Documents")"
+            else
+                GRT_DOCS_DIR="$HOME/Documents"
+            fi
+            ;;
+        *) GRT_DOCS_DIR="$HOME/Documents" ;;
+    esac
+fi
+DOCS_DIR="$GRT_DOCS_DIR"
+DOCS_MOUNT="/root/Documents"   # where it appears inside the container
+
 # ---------- preflight ----------
 command -v docker >/dev/null || { echo "docker not installed"; exit 1; }
 [[ -f "$TARBALL" ]] || { echo "tarball not found: $TARBALL"; exit 1; }
 
-mkdir -p "$BUILD_DIR/context" "$DATA_DIR"
+mkdir -p "$BUILD_DIR/context" "$DATA_DIR" "$DOCS_DIR"
 cp -f "$TARBALL" "$BUILD_DIR/context/grt.tar.gz"
 
 # ---------- Dockerfile ----------
@@ -143,6 +161,7 @@ RUN_ARGS=( --rm -it --init --name "$CONTAINER_NAME" \
            -e "GDK_SCALE=${GDK_SCALE:-1}" \
            -e "VNC_RESOLUTION=$VNC_RESOLUTION" \
            -v "$DATA_DIR:/root" \
+           -v "$DOCS_DIR:$DOCS_MOUNT" \
            -p "$NOVNC_BIND:$NOVNC_PORT:6080" )
 
 RUN_ARGS+=( "${RUN_PLATFORM_ARGS[@]}" )
@@ -150,6 +169,7 @@ RUN_ARGS+=( "${RUN_PLATFORM_ARGS[@]}" )
 docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
 
 URL="http://localhost:${NOVNC_PORT}/vnc.html?host=localhost&port=${NOVNC_PORT}&autoconnect=1&resize=scale"
+echo "[+] docs:  $DOCS_DIR  ->  $DOCS_MOUNT (inside container)"
 echo "[+] launching $CONTAINER_NAME with browser desktop"
 echo "[+] open: $URL"
 exec docker run "${RUN_ARGS[@]}" "$IMAGE_NAME" "$@"
