@@ -30,6 +30,60 @@ Example URL:
 http://localhost:6080/vnc.html?host=localhost&port=6080&autoconnect=1&resize=scale
 ```
 
+## Saving and Loading Files (Host Folder Mount)
+
+GRT runs inside an isolated container, so it cannot see your host filesystem
+by default. To make Save/Load dialogs useful, the script bind-mounts a host
+folder into the container at `/root/Documents`. Anything you save there in
+GRT lands in the corresponding folder on your machine, and any files you
+drop into that host folder become visible to GRT.
+
+### Defaults
+
+| Host OS | Host path mounted | Inside container |
+|---|---|---|
+| macOS | `$HOME/Documents` (e.g. `/Users/<you>/Documents`) | `/root/Documents` |
+| Linux | `xdg-user-dir DOCUMENTS` if available, else `$HOME/Documents` | `/root/Documents` |
+| WSL2 | same as Linux (the WSL user's `~/Documents`) | `/root/Documents` |
+
+The folder is auto-created if it doesn't exist. On launch the script prints
+the active mapping, e.g.:
+
+```text
+[+] docs:  /Users/jane/Documents  ->  /root/Documents (inside container)
+```
+
+### Using a different folder
+
+Set `GRT_DOCS_DIR` before running the script:
+
+```bash
+# macOS — point at iCloud Drive instead
+GRT_DOCS_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/GRT" ./run-grt.sh
+
+# Linux — dedicated reloading folder
+GRT_DOCS_DIR="$HOME/reloading" ./run-grt.sh
+
+# WSL2 — expose the Windows Documents folder
+GRT_DOCS_DIR="/mnt/c/Users/<WindowsUser>/Documents" ./run-grt.sh
+```
+
+### Using it inside GRT
+
+In any GRT file dialog (Save load, Open load, export, etc.) navigate to
+`/root/Documents`. That path inside the container is the host folder shown
+in the table above.
+
+### Notes
+
+- `/root/Documents` is the *only* host path exposed by default. Files saved
+  elsewhere inside the container live in the container's data volume
+  (`./data` next to the script) — fine for GRT's own prefs/database, but
+  not where you want your shared loads.
+- The container runs as root, so files created in the mounted folder are
+  owned by `root` on the host. On macOS Docker Desktop this is masked by
+  the VM; on native Linux you may want to `chown` afterward.
+
 ## Screenshots
 
 Once the application is running, you should see something similar to the following:
