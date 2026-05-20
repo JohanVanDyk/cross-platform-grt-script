@@ -6,12 +6,29 @@ This script allows you to run Gordon's Reloading Tool on a cross-platform setup 
 
 Ensure that Docker is installed on your system.
 
+## Getting the GRT Tarball
+
+Download the latest Linux build (NIGHTLY tarball, `*-linux.tar.gz`) from the
+official GRT install page:
+
+<https://grtools.de/doku.php?id=grtools:en:doku:install>
+
+Place the downloaded file next to `run-grt.sh` (the script's directory).
+A new release ships every few weeks, so re-download periodically to stay
+current.
+
 ## Configuration
 
 Edit the script and update the following value so that it points to your Linux GRT tarball:
 
 ```bash
 TARBALL_DEFAULT="GordonsReloadingTool-2021.2040-NIGHTLY-linux.tar.gz"
+```
+
+Or override per-run without editing the script:
+
+```bash
+GRT_TARBALL=/path/to/GordonsReloadingTool-<version>-linux.tar.gz ./run-grt.sh
 ```
 
 ## Running the Application
